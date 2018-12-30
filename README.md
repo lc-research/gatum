@@ -1,2 +1,0 @@
-# gatum
-Gatum CCS Calculator
