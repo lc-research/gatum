@@ -2,7 +2,7 @@
 
 Gatum is a Java Based RESTful API for calculating average collision cross sections of molecules.
 
-##Prerequisites
+## Prerequisites
 
 - Maven 3.5 or higher
 - JDK 1.7
