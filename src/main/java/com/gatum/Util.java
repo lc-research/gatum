@@ -305,8 +305,8 @@ public class Util{
             Random.rluxgo(3,5013486,0,0);
 
                 Cluster ion =new Cluster(molecule2[i]);
-                this.collisionCrossSection(ion,'H');
-//                return this.collisionCrossSection(ion,'N');
+  //              this.collisionCrossSection(ion,'H');
+                 return this.collisionCrossSection(ion,'H');
 
         }
         return "False";
