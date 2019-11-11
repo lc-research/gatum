@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import static com.gatum.Constants.*;
+
 /**
  * <h1>Cluster!</h1>
  * This class models the properties and associated functions of a molecule
@@ -34,11 +36,31 @@ import java.util.Iterator;
  */
 public class Cluster implements Cloneable{
 
-    double[] rolj,eolj,rhs;
+    private double[] rolj,eolj,rhs;
     IAtomContainer Molecule;
     IAtomContainer originalMolecule;
 
-    public double pot,dpotx,dpoty, dpotz,dmax;
+    private double pot,dpotx,dpoty,dpotz,dmax;
+
+    public double getDmax() {
+        return this.dmax = dmax;
+    }
+
+    public double getPot() {
+        return pot;
+    }
+
+    public double getDpotx() {
+        return dpotx;
+    }
+
+    public double getDpoty() {
+        return dpoty;
+    }
+
+    public double getDpotz() {
+        return dpotz;
+    }
 
     public Cluster(IAtomContainer Mol)
 
@@ -67,12 +89,12 @@ public class Cluster implements Cloneable{
     public void potential(double x, double y, double z)
     {
 
-        double rx=0.E0, ry=0.E0, rz=0.E0, e00=0.E0, de00x=0.E0, de00y=0.E0, de00z=0.E0;
-        double sum1=0.E0, sum2=0.E0, sum3=0.E0, sum4=0.E0, sum5=0.E0, sum6=0.E0;
+        double rx=0, ry=0, rz=0, e00=0, de00x=0, de00y=0, de00z=0;
+        double sum1=0, sum2=0, sum3=0, sum4=0, sum5=0, sum6=0;
         double xx, xx2, yy, yy2, zz, zz2, rxyz2, rxyz;
         double rxyz3, rxyz8, rxyz14;
 
-        dmax=2.E0*Constants.ROMAX;
+        dmax=2*ROMAX;
         int i=0;
 
         double de00;
@@ -93,7 +115,7 @@ public class Cluster implements Cloneable{
                 yy2 = yy * yy;
                 zz = z - a.getPoint3d().z;
                 zz2 = zz * zz;
-                rxyz = FastMath.sqrt(xx2 + yy2 + zz2);
+                rxyz = Math.sqrt(xx2 + yy2 + zz2);
 
                 if (rxyz < dmax)
                     dmax = rxyz;
@@ -102,9 +124,9 @@ public class Cluster implements Cloneable{
 
 
                 // LJ potential
-                e00 += ((eolj[i] * 4) * ((FastMath.pow(rolj[i], 12) / FastMath.pow(rxyz, 12)) - (FastMath.pow(rolj[i], 6) / FastMath.pow(rxyz, 6))));
+                e00 += ((eolj[i] * 4) * ((Math.pow(rolj[i], 12) / Math.pow(rxyz, 12)) - (Math.pow(rolj[i], 6) / Math.pow(rxyz, 6))));
                 // LJ derivative
-                de00 = (eolj[i] * 4) * (((6 * FastMath.pow(rolj[i], 6)) / FastMath.pow(rxyz, 8)) - ((12 * FastMath.pow(rolj[i], 12)) / FastMath.pow(rxyz, 14)));
+                de00 = (eolj[i] * 4) * (((6 * Math.pow(rolj[i], 6)) / Math.pow(rxyz, 8)) - ((12 * Math.pow(rolj[i], 12)) / Math.pow(rxyz, 14)));
 
                 de00x += (de00 * xx);
                 de00y += (de00 * yy);
@@ -114,8 +136,8 @@ public class Cluster implements Cloneable{
                 a.setCharge(1.0 / (Molecule.getAtomCount()));
 
                 if (a.getCharge() != 0) {
-                    rxyz3i = a.getCharge() / FastMath.pow(rxyz, 3);
-                    rxyz5i = -3.E0 * a.getCharge() / FastMath.pow(rxyz, 5);
+                    rxyz3i = a.getCharge() / Math.pow(rxyz, 3);
+                    rxyz5i = -3 * a.getCharge() / Math.pow(rxyz, 5);
                     rx += (xx * rxyz3i);
                     ry += (yy * rxyz3i);
                     rz += (zz * rxyz3i);
@@ -134,9 +156,9 @@ public class Cluster implements Cloneable{
             }
 
             pot = e00 - (Constants.DIPOL * ((rx * rx) + (ry * ry) + (rz * rz)));
-            dpotx = de00x - (Constants.DIPOL * ((2.E0 * rx * sum1) + (2.E0 * ry * sum2) + (2.E0 * rz * sum3)));
-            dpoty = de00y - (Constants.DIPOL * ((2.E0 * rx * sum2) + (2.E0 * ry * sum4) + (2.E0 * rz * sum5)));
-            dpotz = de00z - (Constants.DIPOL * ((2.E0 * rx * sum3) + (2.E0 * ry * sum5) + (2.E0 * rz * sum6)));
+            dpotx = de00x - (Constants.DIPOL * ((2 * rx * sum1) + (2 * ry * sum2) + (2 * rz * sum3)));
+            dpoty = de00y - (Constants.DIPOL * ((2 * rx * sum2) + (2 * ry * sum4) + (2 * rz * sum5)));
+            dpotz = de00z - (Constants.DIPOL * ((2 * rx * sum3) + (2 * ry * sum5) + (2 * rz * sum6)));
 
             return;
 
@@ -154,13 +176,13 @@ public class Cluster implements Cloneable{
             double[] dpotz_mol=new double[3];
 
             double bond=1.0976E-10;
-            double Ptfn=0.E0;
-            double xkT=500.E0*Constants.XK;
-            double pc=-0.4825E0;
+            double Ptfn=0;
+            double xkT=IBST_MAX*XK;
+            double pc=-0.4825;
             double pc_center=-(pc);
 
-            double dipolzz=(1.710E-30/(2.E0*4.E0*Constants.PI*Constants.XEO))*FastMath.pow(Constants.XE,2);
-            double dipolxx=(1.710E-30/(2.E0*4.E0*Constants.PI*Constants.XEO))*FastMath.pow(Constants.XE,2);
+            double dipolzz=(1.710E-30/(2*4*Constants.PI*Constants.XEO))*Math.pow(Constants.XE,2);
+            double dipolxx=(1.710E-30/(2*4*Constants.PI*Constants.XEO))*Math.pow(Constants.XE,2);
             double pot_min=1.0E8;
 
 
@@ -176,23 +198,23 @@ public class Cluster implements Cloneable{
             {
                 for (int ibatom = 0; ibatom < 3; ibatom++)
                 {
-                    rx = 0.E0;
-                    ry = 0.E0;
-                    rz = 0.E0;
-                    e00 = 0.E0;
-                    de00x = 0.E0;
-                    de00y = 0.E0;
-                    de00z = 0.E0;
-                    sum1 = 0.E0;
-                    sum2 = 0.E0;
-                    sum3 = 0.E0;
-                    sum4 = 0.E0;
-                    sum5 = 0.E0;
-                    sum6 = 0.E0;
-                    qpol = 0.E0;
-                    dqpolx = 0.E0;
-                    dqpoly = 0.E0;
-                    dqpolz = 0.E0;
+                    rx = 0;
+                    ry = 0;
+                    rz = 0;
+                    e00 = 0;
+                    de00x = 0;
+                    de00y = 0;
+                    de00z = 0;
+                    sum1 = 0;
+                    sum2 = 0;
+                    sum3 = 0;
+                    sum4 = 0;
+                    sum5 = 0;
+                    sum6 = 0;
+                    qpol = 0;
+                    dqpolx = 0;
+                    dqpoly = 0;
+                    dqpolz = 0;
                     xc=0;
                     yc=0;
                     zc=0;
@@ -200,15 +222,14 @@ public class Cluster implements Cloneable{
                         a = (IAtom) i$.next();
 
                         if (isamp==0) {
-                            xc = (bond / 2.E0)*(2.E0 * (ibatom+1) - 3.E0);
+                            xc = (bond / 2)*(2 * (ibatom+1) - 3);
                         }
-
                         if(isamp==1)
                         {
-                            yc = (bond / 2.E0)*(2.E0 * (ibatom+1) - 3.E0);
+                            yc = (bond / 2)*(2 * (ibatom+1) - 3);
                         }
                         if(isamp==2) {
-                            zc = (bond / 2.E0)*(2.E0 * (ibatom+1) - 3.E0);
+                            zc = (bond / 2)*(2 * (ibatom+1) - 3);
                         }
 
                         dpolx = dipolzz;
@@ -246,9 +267,9 @@ public class Cluster implements Cloneable{
                         rxyz_center3=FastMath.pow(rxyz_center,3);
                         rxyz_center5=FastMath.pow(rxyz_center,5);
                         // LJ potential
-                        e00+=((eolj[i] * 4)*((FastMath.pow(rolj[i],12)/FastMath.pow(rxyz,12))- (FastMath.pow(rolj[i],6)/FastMath.pow(rxyz,6))));
+                        e00+=((eolj[i] * 4)*((Math.pow(rolj[i],12)/Math.pow(rxyz,12))- (Math.pow(rolj[i],6)/Math.pow(rxyz,6))));
                         // LJ derivative
-                        de00=(eolj[i] * 4)*(((FastMath.pow(rolj[i],6)*6)/rxyz8)- ((FastMath.pow(rolj[i],12)*12)/rxyz14));
+                        de00=(eolj[i] * 4)*(((Math.pow(rolj[i],6)*6)/rxyz8)- ((Math.pow(rolj[i],12)*12)/rxyz14));
 
                         de00x+=(de00*xx);
                         de00y+=(de00*yy);
@@ -257,7 +278,7 @@ public class Cluster implements Cloneable{
 
                         if (a.getCharge() != null) {
                             rxyz3i=a.getCharge()/rxyz_center3;
-                            rxyz5i=-3.E0*a.getCharge()/rxyz_center5;
+                            rxyz5i=-3*a.getCharge()/rxyz_center5;
                             rx+=(xx_center*rxyz3i);
                             ry+=(yy_center*rxyz3i);
                             rz+=(zz_center*rxyz3i);
@@ -271,7 +292,7 @@ public class Cluster implements Cloneable{
                             sum6+=(rxyz3i+(zz_center2*rxyz5i));
 
                             //ion-partial charge coulomb potential(quadrupole)
-                            const_k=a.getCharge()*(FastMath.pow(Constants.XE,2))/(4.E0*Constants.PI*Constants.XEO);
+                            const_k=a.getCharge()*(Math.pow(Constants.XE,2))/(4*Constants.PI*Constants.XEO);
                             qpol+=(pc_center*const_k/rxyz_center);
                             qpol+=(pc*const_k/rxyz);
 
@@ -293,9 +314,9 @@ public class Cluster implements Cloneable{
                     i=0;
 
                     pottry[isamp][ibatom]=e00-0.5*(((dpolx*rx*rx)+(dpoly*ry*ry) +(dpolz*rz*rz)))+qpol;
-                    dpotxtry[isamp][ibatom]=de00x-0.5*((dpolx*2.E0*rx*sum1)+(dpoly*2.E0*ry*sum2)+(dpolz*2.E0*rz*sum3))+dqpolx;
-                    dpotytry[isamp][ibatom]=de00y-0.5*((dpolx*2.E0*rx*sum2)+(dpoly*2.E0*ry*sum4)+(dpolz*2.E0*rz*sum5))+dqpoly;
-                    dpotztry[isamp][ibatom]=de00z-0.5*((dpolx*2.E0*rx*sum3)+(dpoly*2.E0*ry*sum5)+(dpolz*2.E0*rz*sum6))+dqpolz;
+                    dpotxtry[isamp][ibatom]=de00x-0.5*((dpolx*2*rx*sum1)+(dpoly*2*ry*sum2)+(dpolz*2*rz*sum3))+dqpolx;
+                    dpotytry[isamp][ibatom]=de00y-0.5*((dpolx*2*rx*sum2)+(dpoly*2*ry*sum4)+(dpolz*2*rz*sum5))+dqpoly;
+                    dpotztry[isamp][ibatom]=de00z-0.5*((dpolx*2*rx*sum3)+(dpoly*2*ry*sum5)+(dpolz*2*rz*sum6))+dqpolz;
 
 
                 }
@@ -314,10 +335,10 @@ public class Cluster implements Cloneable{
             }
 
 
-            pot=0.E0;
-            dpotx=0.E0;
-            dpoty=0.E0;
-            dpotz=0.E0;
+            pot=0;
+            dpotx=0;
+            dpoty=0;
+            dpotz=0;
 
             double weight;
 
@@ -347,7 +368,7 @@ public class Cluster implements Cloneable{
     {
         IAtom a=null;
 
-        double rxy,rzy,nphi=6.9533558064128858e-310,ngamma=6.9533558064128858e-310,otheta,ophi,ogamma;
+        double rxy,rzy,nphi,otheta,ophi,ogamma;
 
 
         IAtomContainer M=null;
@@ -384,8 +405,8 @@ public class Cluster implements Cloneable{
             rzy=Math.sqrt(Math.pow(a.getPoint3d().z,2)+Math.pow(a.getPoint3d().y,2));
             if(rzy==0)
             {
-                a.getPoint3d().z=Math.cos(nphi)*rzy;
-                a.getPoint3d().y=Math.sin(nphi)*rzy;
+                a.getPoint3d().z=Math.cos(NPHI)*rzy;
+                a.getPoint3d().y=Math.sin(NPHI)*rzy;
             }
             else{
                 ophi=Math.acos(a.getPoint3d().z/rzy);
@@ -403,17 +424,17 @@ public class Cluster implements Cloneable{
             rxy=Math.sqrt(Math.pow(a.getPoint3d().x,2)+Math.pow(a.getPoint3d().y,2));
             if(rxy==0)
             {
-                a.getPoint3d().x=Math.cos(ngamma)*rxy;
-                a.getPoint3d().y=Math.sin(ngamma)*rxy;
+                a.getPoint3d().x=Math.cos(NGAMMA)*rxy;
+                a.getPoint3d().y=Math.sin(NGAMMA)*rxy;
             }
             else{
                 ogamma=Math.acos(a.getPoint3d().x/rxy);
                 if(a.getPoint3d().y < 0)
                     ogamma=(2*Constants.PI)-ogamma;
-                ngamma=ogamma+gamma;
+                NGAMMA=ogamma+gamma;
 
-                a.getPoint3d().x=Math.cos(ngamma)*rxy;
-                a.getPoint3d().y=Math.sin(ngamma)*rxy;
+                a.getPoint3d().x=Math.cos(NGAMMA)*rxy;
+                a.getPoint3d().y=Math.sin(NGAMMA)*rxy;
             }
         }
         try {
@@ -434,9 +455,9 @@ public class Cluster implements Cloneable{
     public void rantate(double T,double P,double G)
     {
 
-        double theta=T*2.E0*Constants.PI;
-        double phi=Math.asin((P*2.E0)-1.E0)+(Constants.PI/2.E0);
-        double gamma=G*2.E0*Constants.PI;
+        double theta=T*2*Constants.PI;
+        double phi=Math.asin((P*2)-1)+(Constants.PI/2);
+        double gamma=G*2*Constants.PI;
 
         this.rotate(phi,theta,gamma);
     }
@@ -505,13 +526,13 @@ public class Cluster implements Cloneable{
 
         double[] roljMax=rolj.clone();
         Arrays.sort(roljMax);
-        Constants.ROMAX =roljMax[roljMax.length-1];
+        ROMAX =roljMax[roljMax.length-1];
 
         if(Constants.bufferGas=='N')
         {
-            Constants.ROMAX=Constants.ROMAX+(1.1055E-10/2.0);
+            ROMAX=ROMAX+(1.1055E-10/2.0);
         }
-
+        dmax=2*ROMAX;
     }
     /**
      * This method is used to find LJ parameters of each Atom in the cluster for hilium
@@ -521,7 +542,7 @@ public class Cluster implements Cloneable{
      */
     public double setLjParameters(String Parameter, String AtomType)
     {
-        double ParameterVaule=0.0;
+        double ParameterVaule=0;
 
         if(Parameter=="EO")
         {
@@ -572,19 +593,19 @@ public class Cluster implements Cloneable{
             switch(AtomType)
             {
                 case "O" :
-                    ParameterVaule=2.7E0*1.0E-10;
+                    ParameterVaule=2.7*1.0E-10;
                     break;
                 case "N" :
-                    ParameterVaule=2.7E0*1.0E-10;
+                    ParameterVaule=2.7*1.0E-10;
                     break;
                 case "C" :
-                    ParameterVaule=2.7E0*1.0E-10;
+                    ParameterVaule=2.7*1.0E-10;
                     break;
                 case "H" :
-                    ParameterVaule=2.2E0*1.0E-10;
+                    ParameterVaule=2.2*1.0E-10;
                     break;
                 case "S" :
-                    ParameterVaule=3.5E0*1.0E-10;
+                    ParameterVaule=3.5*1.0E-10;
                     break;
 
             }
@@ -599,7 +620,7 @@ public class Cluster implements Cloneable{
      */
     public static double setLjParametersN2(String Parameter, String AtomType)
     {
-        double ParameterVaule=0.0;
+        double ParameterVaule=0;
 
         if(Parameter=="EO")
         {
@@ -682,34 +703,34 @@ public class Cluster implements Cloneable{
             switch(AtomType)
             {
                 case "O" :
-                    ParameterVaule=2.7E0*1.0E-10;
+                    ParameterVaule=2.7*1.0E-10;
                     break;
                 case "N" :
-                    ParameterVaule=2.7E0*1.0E-10;
+                    ParameterVaule=2.7*1.0E-10;
                     break;
                 case "C" :
-                    ParameterVaule=2.7E0*1.0E-10;
+                    ParameterVaule=2.7*1.0E-10;
                     break;
                 case "H" :
-                    ParameterVaule=2.2E0*1.0E-10;
+                    ParameterVaule=2.2*1.0E-10;
                     break;
                 case "Na":
-                    ParameterVaule=2.853E0*1.0E-10;
+                    ParameterVaule=2.853*1.0E-10;
                     break;
                 case "Si":
-                    ParameterVaule=2.95E0*1.0E-10;
+                    ParameterVaule=2.95*1.0E-10;
                     break;
                 case "S":
-                    ParameterVaule=3.5E0*1.0E-10;
+                    ParameterVaule=3.5*1.0E-10;
                     break;
                 case "Fe":
-                    ParameterVaule=3.5E0*1.0E-10;
+                    ParameterVaule=3.5*1.0E-10;
                     break;
                 case "P":
-                    ParameterVaule=4.2E0*1.0E-10;
+                    ParameterVaule=4.2*1.0E-10;
                     break;
                 case "F":
-                    ParameterVaule=2.7E0*1.0E-10;
+                    ParameterVaule=2.7*1.0E-10;
                     break;
 
             }

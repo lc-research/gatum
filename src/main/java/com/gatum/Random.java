@@ -25,28 +25,28 @@ public final class Random {
     }
 
 
-    static double[] SEEDS=new double[24];
-    static double CARRY=0;
-    static int J24=4,I24=18;
-    static double TWOM24=5.9604644775390625E-08;
-    static int[] NEXT=new int[24];
-    static double TWOM12=0.000244140625;
-    static int IN24=9;
-    static int NSKIP;
-    static int LENV=1;
-    static int LXDFLT=3;
-    static int LUXLEV;
-    static int MAXLEV=4;
-    static int JSEED;
-    static int JSDFLT=314159265;
-    static int INSEED;
-    static boolean NOTYET;
-    static double[] ISEEDS=new double[24];
-    static int ICONS=2147483563;
-    static double ITWO24=Math.pow(2,24);
-    static int IGIGA=1000000000;
-    static int KOUNT=0;
-    static int MKOUNT=0;
+    private static double[] SEEDS=new double[24];
+    private static double CARRY=0;
+    private static int J24=4,I24=18;
+    private static double TWOM24=5.9604644775390625E-08;
+    private static int[] NEXT=new int[24];
+    private static double TWOM12=0.000244140625;
+    private static int IN24=9;
+    private static int NSKIP;
+    private static int LENV=1;
+    private static int LXDFLT=3;
+    private static int LUXLEV;
+    private static int MAXLEV=4;
+    private static int JSEED;
+    private static int JSDFLT=314159265;
+    private static int INSEED;
+    private static boolean NOTYET;
+    private static double[] ISEEDS=new double[24];
+    private static int ICONS=2147483563;
+    private static double ITWO24=Math.pow(2,24);
+    private static int IGIGA=1000000000;
+    private static int KOUNT=0;
+    private static int MKOUNT=0;
 
     /**
      * Subtract-and-borrow random number generator proposed by

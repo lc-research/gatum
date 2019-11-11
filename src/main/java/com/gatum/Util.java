@@ -14,10 +14,10 @@ package com.gatum;
 
 import org.openscience.cdk.interfaces.IAtom;
 import org.openscience.cdk.interfaces.IAtomContainer;
-
 import java.util.*;
 import java.util.concurrent.*;
-
+import java.util.stream.IntStream;
+import static com.gatum.Constants.*;
 
 
 /**
@@ -42,14 +42,12 @@ public class Util{
     public String collisionCrossSection(Cluster ion,char bufferG)throws InterruptedException, ExecutionException {
         //determin maximum extent and orientation along x axis
 
-
         IAtom atom = null;
-        double r, rmax=0.0;
+        double r;
         int ihold = 0, i = 0;
 
         final GasAtom bufferGas = new GasAtom(bufferG);
         ion.configureCluster();
-
 
 
         for (Iterator i$ = ion.originalMolecule.atoms().iterator(); i$.hasNext(); ) {
@@ -58,8 +56,8 @@ public class Util{
 
             r = Math.sqrt(Math.pow(atom.getPoint3d().x, 2) + Math.pow(atom.getPoint3d().y, 2) + Math.pow(atom.getPoint3d().z, 2));
 
-            if (r > rmax) {
-                rmax = r;
+            if (r > RMAX) {
+                RMAX = r;
                 ihold = i;
             }
             i++;
@@ -72,9 +70,9 @@ public class Util{
 
         phi = Math.acos(atom.getPoint3d().z / (Math.sqrt(Math.pow(atom.getPoint3d().z, 2) + Math.pow(atom.getPoint3d().y, 2))))+(Constants.PI / 2.0);
         if (atom.getPoint3d().y > 0)
-            phi = (2.0 * Constants.PI) - phi;
+            phi = (2 * Constants.PI) - phi;
 
-        double theta = 0.0, gamma = 0.0;
+        double theta = 0, gamma = 0;
         ion.rotate(phi, theta, gamma);
 
 
@@ -92,20 +90,18 @@ public class Util{
 
         //      determine rmax, emax, and r00 along x, y, and z directions
 
-        int irn = 1000;
-
         double x;
 
-        for (int ir = 1; ir <= irn; ir++) {
-            x = rmax + Constants.ROMAX - (ir * ((rmax + Constants.ROMAX) / irn));
+        for (int ir = 1; ir <= Constants.IRN; ir++) {
+            x = RMAX + ROMAX - (ir * ((RMAX + ROMAX) / IRN));
 
-            ion.potential(x, 0.E0, 0.E0);
+            ion.potential(x, 0, 0);
 
-            if (ion.pot == 0) {
+            if (ion.getPot() == 0) {
                 break;
             }
-            if (ion.pot < 0.E0) {
-                rmax = x;
+            if (ion.getPot() < 0) {
+                RMAX = x;
             }
 
         }
@@ -117,123 +113,112 @@ public class Util{
         final double[] wgst = (double[]) rGst.get("wgst");
 
 
-        final double[] b2max = new double[40];
-
-        int numOfCpus = Runtime.getRuntime().availableProcessors();
-        int iterations = 40;
-        int window=iterations/numOfCpus;
-        final double rmaxxT=rmax;
-
-        final int[] stepsB=new int[numOfCpus*2];
-        int h=0;
-        for(i=0;i<=iterations;)
-        {
-            stepsB[h]=i;
-            i+=window;
-            h++;
-        }
-
-        if(iterations%numOfCpus>0)
-        {
-            stepsB[numOfCpus]=iterations;
-        }
-
-        final Parallel[] integration = new Parallel[numOfCpus];
-        final Cluster[] ion1 = new Cluster[numOfCpus];
-        final GasAtom[] bufferGass = new GasAtom[numOfCpus];
-        ExecutorService exec = Executors.newFixedThreadPool(numOfCpus);
-        Collection<Callable<double[]>> tasksB2MaxMain = new ArrayList<Callable<double[]>>();
-
-        Constants.MU=((bufferGas.M1*Constants.M2)/(bufferGas.M1+Constants.M2))/(Constants.XN*1.0E3);
+        final double[] b2max = new double[INP];
 
 
+        MU=((bufferGas.getMass()*M2)/(bufferGas.getMass()+M2))/(XN*1.0E3);
 
-        for(int c=0;c<numOfCpus;c++){
-            final int m=c;
+        final Cluster[] ionParallel = new Cluster[INP*ITN];
+        final GasAtom[] bufferGasParallel = new GasAtom[INP*ITN];
+        for(int c=0;c<INP*ITN;c++){
             try{
-                integration[c]=new Parallel(window);
-                ion1[c]=(Cluster) ion.clone();
-                bufferGass[c]=(GasAtom)bufferGas.clone();
-
-                tasksB2MaxMain.add((new Callable<double[]>() {
-                    @Override
-                    public double[] call() {
-                        return integration[m].b2Max(ion1[m],bufferGass[m], pgst, rmaxxT, stepsB[m+1], stepsB[m]);
-                    }
-                }));
+                ionParallel[c]=(Cluster) ion.clone();
+                bufferGasParallel[c]=(GasAtom)bufferGas.clone();
             }catch(CloneNotSupportedException e){}
 
         }
 
-        List<Future<double[]>> futuresB2Max = exec.invokeAll(tasksB2MaxMain);
+        final double EO_DIV_MU=EO/(MU/2);
+        final int IBST = (int) (RMAX / RO) - 6;
 
-        for (int j = 0; j < numOfCpus; j++) {
-            Future<double[]> B2MaxA = futuresB2Max.get(j);
-            double[] b2Max_tmp1 = B2MaxA.get();
-            for (i = 0; i < 40; i++) {
-                if (b2Max_tmp1[i] > 0)
-                    b2max[i] = b2Max_tmp1[i];
-            }
-        }
+
+        IntStream.iterate(INP-1,ig->ig-1).limit(INP).parallel().forEach(ig-> {
+
+            double scatAngle,impactParamter;
+            double[] cosx = new double[IBST_MAX];
+
+            double velocity = Math.sqrt((Math.pow(pgst[ig], 2) * EO_DIV_MU));
+            int ibst = IBST;
+
+            if (ig < INP - 1)
+                ibst = (int) (b2max[ig + 1] / DBST) - 6;
+
+            if (ibst < 0)
+                ibst = 0;
+
+
+            do {
+
+                impactParamter = RO * Math.sqrt(DBST * (double) ibst);
+
+                bufferGas.scatteringAngle(ionParallel[ig], velocity, impactParamter);
+                scatAngle = bufferGas.getScatAngle();
+                cosx[ibst] = 1 - Math.cos(scatAngle);
+
+                if (ibst < IMP_FAC) {
+                    ibst++;
+                }
+
+                if (ibst >= IMP_FAC) {
+                    if (cosx[ibst] < CMIN && cosx[ibst - 1] < CMIN && cosx[ibst - 2]
+                            < CMIN && cosx[ibst - 3] < CMIN && cosx[ibst - 4] < CMIN) {
+                        b2max[ig] = (double) (ibst - IMP_FAC) * DBST;
+                        do {
+                            b2max[ig] = b2max[ig] + DBST;
+                            impactParamter = Constants.RO * Math.sqrt(b2max[ig]);
+                            bufferGas.scatteringAngle(ionParallel[ig], velocity, impactParamter);
+                            scatAngle = bufferGas.getScatAngle();
+                        } while ((1 - Math.cos(scatAngle)) > CMIN);
+                        break;
+
+                    } else {
+                        ibst++;
+                    }
+
+                }
+
+            } while (ibst < IBST_MAX);
+        } );
+
 
 
         double cs;
-        double mom11st = 0.E0;
-
-
         Random.ranlux();
 
-
-        final double[] RandomN = new double[40000];
-        for (int j = 0; j < 40000; j++) {
+        final double[] RandomN = new double[INP*ITN*IMP*4];
+        for (int j = 0; j < INP*ITN*IMP*4; j++) {
             RandomN[j] = Random.ranlux();
         }
 
-        iterations = Constants.INP * Constants.ITN;
+        final double MU_HALF=MU/2;
 
-        window=iterations/numOfCpus;
-        final int[] steps=new int[numOfCpus*2];
-        h=0;
-        for(i=0;i<=iterations;)
-        {
-            steps[h]=i;
-            i+=window;
-            h++;
-        }
+        IntStream.range(0,INP*ITN).parallel().forEach(j-> {
+            double velocity,impactParameter;
+            int ig=j%Constants.INP;
+            int pointer=j;
+            if(j>0)
+                pointer=IMP*j*4;
 
-        if(iterations%numOfCpus>0)
-        {
-            steps[numOfCpus]=iterations;
-        }
+            velocity=Math.sqrt(Math.pow(pgst[ig],2)*EO_DIV_MU);
 
-        Collection<Callable<Double>> mcI = new ArrayList<Callable<Double>>();
+            for(int im=0;im<IMP;im++)
+            {
+                ionParallel[j].rantate(RandomN[pointer+1],RandomN[pointer+2],RandomN[pointer+3]);
 
-            for(int c=0;c<numOfCpus;c++) {
-                final int j=c;
+                impactParameter=Constants.RO*Math.sqrt(RandomN[pointer]*b2max[ig]);
+                bufferGasParallel[j].scatteringAngle(ionParallel[j],
+                        velocity,impactParameter);
 
-                mcI.add((new Callable<Double>() {
-                    @Override
-                    public Double call() {
-                        return integration[j].mcIntegration(ion1[j], bufferGass[j], b2max, pgst, wgst, RandomN, steps[j],steps[j+1]);
-                    }
-                }));
+                OMEGA +=((1-Math.cos(bufferGasParallel[j].getScatAngle()))*b2max[ig]*wgst[ig])/IMP;
+                pointer+=4;
+
             }
 
+        });
 
 
+        cs = (OMEGA / (double) Constants.ITN) * Constants.PI * Math.pow(Constants.RO, 2)*Math.pow(10,20);
 
-            List<Future<Double>> mcIntegration = exec.invokeAll(mcI );
-            exec.shutdown();
-
-
-        for(i=0;i<numOfCpus;i++)
-        {
-            mom11st+=mcIntegration.get(i).get();
-        }
-
-            cs = (mom11st / (double) Constants.ITN) * Constants.PI * Math.pow(Constants.RO, 2)*Math.pow(10,20);
-            //System.out.print("The CCS value of " + ion.Molecule.getProperty("cdk:Title") + " :" + Double.toString(cs));
-        System.out.print(ion.Molecule.getProperty("cdk:Title") + " ," +  String.format("%1.3E",cs)+"\n");
         return "The CCS value of the molecule " + ion.Molecule.getProperty("cdk:Title") + " is " + String.format("%1.3E",cs)+'\n';
 
 
@@ -252,34 +237,32 @@ public class Util{
 
         double tst3=Math.pow(tst,3);
 
-        double dgst=5.0E-7*6.E0*Math.sqrt(tst);
+        double dgst=5.0E-7*6*Math.sqrt(tst);
         double gst=dgst;
-        double sum=0.E0;
-        double sum1=0.E0;
-        double sum2=0.E0;
+        double sum=0, sum1=0, sum2=0;
 
         for(int i=0;i<=Constants.INP;i++) {
 
             sum1 = sum1 + Math.sqrt(i);
         }
 
-        double hold1=0.0, hold2=0.0, hold3=0.0, gstt=0.0;
-        double[] wgst = new double[40];
-        double[] pgst = new double[40];
+        double hold1, hold2, gstt;
+        double[] wgst = new double[INP];
+        double[] pgst = new double[INP];
 
         for(int i=1;i<=Constants.INP;i++) {
             hold1 = Math.sqrt(i);
             hold2 = Math.sqrt(i-1);
-            sum2 = sum2 + hold2;
+            sum2 += hold2;
             wgst[i-1] = hold1 / sum1;
 
-            gstt = tst3 * (sum2 + (hold1 / 2.E0))/sum1;
+            gstt = tst3 * (sum2 + (hold1 / 2))/sum1;
 
             do {
-                sum = sum + (Math.exp(-1*Math.pow(gst,2)/ tst)* Math.pow(gst,5) * dgst);
+                sum += (Math.exp(-1*Math.pow(gst,2)/ tst)* Math.pow(gst,5) * dgst);
                 gst = gst + dgst;
                 if (sum>gstt)
-                    pgst[i-1] = gst - (dgst / 2.E0);
+                    pgst[i-1] = gst - (dgst / 2);
             }while (sum<gstt);
 
         }
@@ -295,18 +278,22 @@ public class Util{
     {
 
         DataFile inputFile=new DataFile("input_file/"+dataFile);
-        IAtomContainer molecule2[]= inputFile.retMolecule();
+        IAtomContainer molecule[]= inputFile.retMolecule();
+        String CCS;
+        long start,end;
 
-
-
-        for(int i=0;i<molecule2.length;i++) {
-
+       for(int i=0;i<molecule.length;i++)
+        {
+            start = System.currentTimeMillis();
 
             Random.rluxgo(3,5013486,0,0);
+            Cluster ion = new Cluster(molecule[i]);
+            CCS=this.collisionCrossSection(ion,'H');
 
-                Cluster ion =new Cluster(molecule2[i]);
-  //              this.collisionCrossSection(ion,'H');
-                 return this.collisionCrossSection(ion,'H');
+            end = System.currentTimeMillis();
+            float sec = (end - start)/ 1000F;
+
+            System.out.println(CCS+" : "+sec+" seconds");
 
         }
         return "False";

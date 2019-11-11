@@ -25,13 +25,13 @@ import java.util.Iterator;
  */
 
 public class GasAtom implements Cloneable{
-    double[] w = new double[6];
-    double[] dw = new double[6];
-    double dt;
-    int l;
-    double[][] tmp_array=new double[6][6];
-    double scatAngle=0.0;
-    double M1=4.0026E0;
+    private double[] w = new double[6];
+    private double[] dw = new double[6];
+    private double dt;
+    private int l;
+    private double[][] tmp_array=new double[6][6];
+    private double scatAngle;
+    private double Mass;
 
     public GasAtom(double[] w)
     {
@@ -40,9 +40,19 @@ public class GasAtom implements Cloneable{
     public GasAtom(char type)
     {
         if(type=='N')
-            M1=28.0134E0;
+            Mass=28.0134;
+        else Mass=4.0026;
 
         Constants.bufferGas=type;
+    }
+
+    public double getScatAngle(){
+        return scatAngle;
+    }
+
+    public double getMass()
+    {
+        return this.Mass;
     }
     /**
      * This method is used to difine hamiltonian equations of motion.
@@ -57,9 +67,9 @@ public class GasAtom implements Cloneable{
 
         Mol.potential(w[0],w[2],w[4]);
 
-        dw[1]=- Mol.dpotx;
-        dw[3]=- Mol.dpoty;
-        dw[5]=- Mol.dpotz;
+        dw[1]=- Mol.getDpotx();
+        dw[3]=- Mol.getDpoty();
+        dw[5]=- Mol.getDpotz();
 
 
     }
@@ -82,7 +92,7 @@ public class GasAtom implements Cloneable{
         for(int j=0;j<6;j++)
         {
 
-            w[j] += ((savdw[j]+ (-0.111059153612E0 * tmp_array[0][j])+ (0.672667757774E0 * tmp_array[1][j])+ (-1.70633621697E0 * tmp_array[2][j])+ ( 2.33387888707E0* tmp_array[3][j])+ (-1.8524668225E0* tmp_array[4][j])) * (dt * 2.97013888888E0));
+            w[j] += ((savdw[j]+ (-0.111059153612 * tmp_array[0][j])+ (0.672667757774 * tmp_array[1][j])+ (-1.70633621697 * tmp_array[2][j])+ ( 2.33387888707* tmp_array[3][j])+ (-1.8524668225* tmp_array[4][j])) * (dt * 2.97013888888));
         }
 
 
@@ -98,7 +108,7 @@ public class GasAtom implements Cloneable{
             tmp_array[3][j]=tmp_array[4][j];
 
             tmp_array[4][j]=savdw[j];
-            w[j]=savw[j]+(dt * 0.990972222222E0)*(tmp_array[4][j]+(tmp_array[3][j]*-0.55921513665E0+(tmp_array[2][j]*0.337771548703E0+(tmp_array[1][j]*-0.121233356692E0+ (tmp_array[0][j]*0.0189208128941E0+0.332866152768E0*dw[j])))));
+            w[j]=savw[j]+(dt * 0.990972222222)*(tmp_array[4][j]+(tmp_array[3][j]*-0.55921513665+(tmp_array[2][j]*0.337771548703+(tmp_array[1][j]*-0.121233356692+ (tmp_array[0][j]*0.0189208128941+0.332866152768*dw[j])))));
         }
 
 
@@ -123,31 +133,31 @@ public class GasAtom implements Cloneable{
             hamiltonian(Mol);
             for (int i = 0; i < 6; i++) {
                 dw[i] = dt * dw[i];
-                r = 0.50E0 * (dw[i] - 2.0E0 * q[i]);
+                r = 0.50 * (dw[i] - 2.0 * q[i]);
                 w[i] += r;
-                q[i] += 3.0 * r + (-0.5E0) * dw[i];
+                q[i] += 3.0 * r + (-0.5) * dw[i];
             }
 
             hamiltonian(Mol);
             for (int i = 0; i < 6; i++) {
                 dw[i] = dt * dw[i];
-                r = 0.292893218814E0 * (dw[i] - 1.0E0 * q[i]);
+                r = 0.292893218814 * (dw[i] - 1 * q[i]);
                 w[i] += r;
-                q[i] += 3.0 * r + (-0.292893218814E0) * dw[i];
+                q[i] += 3.0 * r + (-0.292893218814) * dw[i];
             }
 
             hamiltonian(Mol);
             for (int i = 0; i < 6; i++) {
                 dw[i] = dt * dw[i];
-                r = 1.70710678118E0 * (dw[i] - 1.0E0 * q[i]);
+                r = 1.70710678118 * (dw[i] - 1 * q[i]);
                 w[i] += r;
-                q[i] += 3.0 * r + (-1.70710678118E0) * dw[i];
+                q[i] += 3.0 * r + (-1.70710678118) * dw[i];
             }
 
             hamiltonian(Mol);
             for (int i = 0; i < 6; i++) {
                 dw[i] = dt * dw[i];
-                r = 0.1666666666667E0 * (dw[i] - 2.0E0 * q[i]);
+                r = 0.1666666666667 * (dw[i] - 2 * q[i]);
                 w[i] += r;
             }
 
@@ -171,30 +181,30 @@ public class GasAtom implements Cloneable{
 
 
         double vy = -v;
-        double vx = 0.E0;
-        double vz = 0.E0;
+        double vx = 0;
+        double vz = 0;
 
         // determine time step
 
-        double top = (v / 95.2381E0) - 0.5E0;
-        if (v > 1000.E0)
-            top = 10.E0;
-        if (v > 2000.E0)
-            top = 10.0E0 - ((v - 2000.E0) * 7.5E-3);
-        if (v > 3000.E0)
-            top = 2.5E0;
+        double top = (v / 95.2381) - 0.5;
+        if (v > 1000)
+            top = 10;
+        if (v > 2000)
+            top = 10.0 - ((v - 2000) * 7.5E-3);
+        if (v > 3000)
+            top = 2.5;
 
         double dt1 = top * Constants.DTSF1 * 1.0E-11 / v;
         double dt2 = dt1 * Constants.DTSF2;
 
         // determine trajectory start position
 
-        double e0 = 0.5E0 * Constants.MU * Math.pow(v, 2);
+        double e0 = 0.5 * Constants.MU * Math.pow(v, 2);
         double x = b;
-        double z = 0.E0;
+        double z = 0;
 
-        double ymin = 0.E0;
-        double ymax = 0.E0;
+        double ymin = 0;
+        double ymax = 0;
 
         IAtom a;
 
@@ -219,7 +229,7 @@ public class GasAtom implements Cloneable{
 
 
 
-        if (Math.abs((Mol.pot) / e0) < Constants.SW1) {
+        if (Math.abs((Mol.getPot()) / e0) < Constants.SW1) {
 
             do {
                 id2 = id2 - 1;
@@ -232,20 +242,20 @@ public class GasAtom implements Cloneable{
                 y = (double) id2 * 1.0E-10;
                 Mol.potential(x,y,z);
 
-            } while ((Math.abs(Mol.pot / e0)) < Constants.SW1);
+            } while ((Math.abs(Mol.getPot() / e0)) < Constants.SW1);
         } else {
             do {
                 id2 = id2 + 10;
                 y = (double) id2 * 1.0E-10;
                 Mol.potential(x,y,z);
 
-            } while (Math.abs(Mol.pot / e0) > Constants.SW1);
+            } while (Math.abs(Mol.getPot() / e0) > Constants.SW1);
 
             do {
                 id2 = id2 - 1;
                 y = (double) id2 * 1.0E-10;
                 Mol.potential(x,y,z);
-            } while (Math.abs(Mol.pot / e0) < Constants.SW1);
+            } while (Math.abs(Mol.getPot() / e0) < Constants.SW1);
 
         }
 
@@ -276,13 +286,13 @@ public class GasAtom implements Cloneable{
                     bufferGas.diffeq(Mol);
 
                 nw++;
-                if ((noOfSteps + nw) > 30000)// check if trajectory lost: too many steps is an indication of a lost trajectory
+                if ((noOfSteps + nw) > Constants.MAX_STEPS)// check if trajectory lost: too many steps is an indication of a lost trajectory
                 {
                     return;
                 }
-            } while (Mol.dmax<Constants.ROMAX);
+            } while (Mol.getDmax()<Constants.ROMAX);
 
-            redPot = Math.abs(Mol.pot) / e0;
+            redPot = Math.abs(Mol.getPot()) / e0;
             if ((redPot > Constants.SW2) && bufferGas.dt == dt1) {
                 bufferGas.dt = dt2;
                 bufferGas.l=0;
@@ -299,7 +309,7 @@ public class GasAtom implements Cloneable{
         scatAngle = Math.acos((bufferGas.dw[2] * (-v)) / (v * Math.sqrt(Math.pow(bufferGas.dw[0], 2) + Math.pow(bufferGas.dw[2], 2) + Math.pow(bufferGas.dw[4], 2))));
 
 
-        if (!(bufferGas.dw[0] > 0.E0)) {
+        if (!(bufferGas.dw[0] > 0)) {
             scatAngle=scatAngle*-1;
         }
 
