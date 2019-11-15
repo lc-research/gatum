@@ -5,7 +5,7 @@ Gatum is a Java Based RESTful API for calculating average collision cross sectio
 ## Prerequisites
 
 - Maven 3.5 or higher
-- JDK 1.7
+- JDK 1.8
 
 ## Testing
 
