@@ -15,6 +15,9 @@ package com.gatum;
 import org.openscience.cdk.interfaces.IAtom;
 import java.util.Iterator;
 
+import static com.gatum.Constants.HE_MASS;
+import static com.gatum.Constants.N2_MASS;
+
 /**
  * <h1>GasAtom!</h1>
  * This class defines the properties and functions of the buffer gas atom.
@@ -40,8 +43,8 @@ public class GasAtom implements Cloneable{
     public GasAtom(char type)
     {
         if(type=='N')
-            Mass=28.0134;
-        else Mass=4.0026;
+            Mass=N2_MASS;
+        else Mass=HE_MASS;
 
         Constants.bufferGas=type;
     }

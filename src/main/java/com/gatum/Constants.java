@@ -34,6 +34,8 @@ public final class Constants {
     public static double NPHI=6.9533558064128858E-310;
     public static double NGAMMA=6.9533558064128858E-310;
     public static double DIPOL=(0.204956E-30/(2*4*PI*XEO))*XE*XE;
+    public static double N2_MASS=28.0134;
+    public static double HE_MASS=4.0026;
     public static double M2; //Mass of the molecule.
     public static double MU; //Mass constants.
     public static double RMAX=0;
@@ -60,6 +62,11 @@ public final class Constants {
     public static final double CONVE=4.2*0.01036427;
     public static final double CONVR=0.890898718;
     public static final double SW2=0.005;
+    public static final double BOND=1.0976E-10;
+    public static final double PC=-0.4825;
+    public static final double PC_CENTER=-(PC);
+    public static final double DIPOL_D=1.710E-30;
+    public static final double POT_MIN=1.0E8;
     public static double ROMAX=0.0;
 
 }

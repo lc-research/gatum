@@ -12,7 +12,6 @@
 
 package com.gatum;
 
-import net.jafama.FastMath;
 import org.openscience.cdk.config.IsotopeFactory;
 import org.openscience.cdk.config.Isotopes;
 import org.openscience.cdk.geometry.GeometryUtil;
@@ -175,15 +174,12 @@ public class Cluster implements Cloneable{
             double[][] dpotztry=new double[3][3];
             double[] dpotz_mol=new double[3];
 
-            double bond=1.0976E-10;
             double Ptfn=0;
             double xkT=IBST_MAX*XK;
-            double pc=-0.4825;
-            double pc_center=-(pc);
 
-            double dipolzz=(1.710E-30/(2*4*Constants.PI*Constants.XEO))*Math.pow(Constants.XE,2);
-            double dipolxx=(1.710E-30/(2*4*Constants.PI*Constants.XEO))*Math.pow(Constants.XE,2);
-            double pot_min=1.0E8;
+            double dipolzz=(DIPOL_D/(2*4*PI*XEO))*Math.pow(XE,2);
+            double dipolxx=(DIPOL_D/(2*4*PI*XEO))*Math.pow(XE,2);
+            double POT_MIN=1.0E8;
 
 
             double qpol,dqpolx,dqpoly,dqpolz;
@@ -222,14 +218,14 @@ public class Cluster implements Cloneable{
                         a = (IAtom) i$.next();
 
                         if (isamp==0) {
-                            xc = (bond / 2)*(2 * (ibatom+1) - 3);
+                            xc = (BOND / 2)*(2 * (ibatom+1) - 3);
                         }
                         if(isamp==1)
                         {
-                            yc = (bond / 2)*(2 * (ibatom+1) - 3);
+                            yc = (BOND / 2)*(2 * (ibatom+1) - 3);
                         }
                         if(isamp==2) {
-                            zc = (bond / 2)*(2 * (ibatom+1) - 3);
+                            zc = (BOND / 2)*(2 * (ibatom+1) - 3);
                         }
 
                         dpolx = dipolzz;
@@ -239,33 +235,33 @@ public class Cluster implements Cloneable{
 
                         xx_center=x- a.getPoint3d().x;
                         xx=xx_center+xc;
-                        xx_center2= FastMath.pow(xx_center,2);
-                        xx2=FastMath.pow(xx,2);
+                        xx_center2= Math.pow(xx_center,2);
+                        xx2=Math.pow(xx,2);
 
                         yy_center=y-a.getPoint3d().y;
                         yy=yy_center+yc;
-                        yy_center2= FastMath.pow(yy_center,2);
-                        yy2=FastMath.pow(yy,2);
+                        yy_center2= Math.pow(yy_center,2);
+                        yy2=Math.pow(yy,2);
 
                         zz_center=z-a.getPoint3d().z;
                         zz=zz_center+zc;
-                        zz_center2=FastMath.pow(zz_center,2);
-                        zz2=FastMath.pow(zz,2);
+                        zz_center2=Math.pow(zz_center,2);
+                        zz2=Math.pow(zz,2);
 
                         rxyz_center2=xx_center2+yy_center2+zz_center2;
                         rxyz2=xx2+yy2+zz2;
 
-                        rxyz_center=FastMath.sqrt(rxyz_center2);
-                        rxyz=FastMath.sqrt(rxyz2);
+                        rxyz_center=Math.sqrt(rxyz_center2);
+                        rxyz=Math.sqrt(rxyz2);
                         if(rxyz < dmax) {
                             dmax = rxyz;
                         }
-                        rxyz3=FastMath.pow(rxyz,3);
-                        rxyz8=FastMath.pow(rxyz,8);
-                        rxyz14=FastMath.pow(rxyz,14);
+                        rxyz3=Math.pow(rxyz,3);
+                        rxyz8=Math.pow(rxyz,8);
+                        rxyz14=Math.pow(rxyz,14);
 
-                        rxyz_center3=FastMath.pow(rxyz_center,3);
-                        rxyz_center5=FastMath.pow(rxyz_center,5);
+                        rxyz_center3=Math.pow(rxyz_center,3);
+                        rxyz_center5=Math.pow(rxyz_center,5);
                         // LJ potential
                         e00+=((eolj[i] * 4)*((Math.pow(rolj[i],12)/Math.pow(rxyz,12))- (Math.pow(rolj[i],6)/Math.pow(rxyz,6))));
                         // LJ derivative
@@ -293,16 +289,16 @@ public class Cluster implements Cloneable{
 
                             //ion-partial charge coulomb potential(quadrupole)
                             const_k=a.getCharge()*(Math.pow(Constants.XE,2))/(4*Constants.PI*Constants.XEO);
-                            qpol+=(pc_center*const_k/rxyz_center);
-                            qpol+=(pc*const_k/rxyz);
+                            qpol+=(PC_CENTER*const_k/rxyz_center);
+                            qpol+=(PC*const_k/rxyz);
 
                             // ion-partial charge coulomb derivative(quadrupole)
-                            dqpolx-=((pc_center*const_k/rxyz_center3)*(xx_center));
-                            dqpoly-=((pc_center*const_k/rxyz_center3)*(yy_center));
-                            dqpolz-=((pc_center*const_k/rxyz_center3)*(zz_center));
-                            dqpolx-=((pc*const_k/rxyz3)*(xx));
-                            dqpoly-=((pc*const_k/rxyz3)*(yy));
-                            dqpolz-=((pc*const_k/rxyz3)*(zz));
+                            dqpolx-=((PC_CENTER*const_k/rxyz_center3)*(xx_center));
+                            dqpoly-=((PC_CENTER*const_k/rxyz_center3)*(yy_center));
+                            dqpolz-=((PC_CENTER*const_k/rxyz_center3)*(zz_center));
+                            dqpolx-=((PC*const_k/rxyz3)*(xx));
+                            dqpoly-=((PC*const_k/rxyz3)*(yy));
+                            dqpolz-=((PC*const_k/rxyz3)*(zz));
 
 
                         }
@@ -321,8 +317,8 @@ public class Cluster implements Cloneable{
 
                 }
                 pot_mol[isamp]=pottry[isamp][0]+pottry[isamp][1];
-                if(pot_min > pot_mol[isamp]) {
-                    pot_min = pot_mol[isamp];
+                if(POT_MIN > pot_mol[isamp]) {
+                    POT_MIN = pot_mol[isamp];
                 }
                 dpotx_mol[isamp]=dpotxtry[isamp][0]+dpotxtry[isamp][1];
                 dpoty_mol[isamp]=dpotytry[isamp][0]+dpotytry[isamp][1];
@@ -331,7 +327,7 @@ public class Cluster implements Cloneable{
             }
 
            for(int isamp=0;isamp<3;isamp++) {
-                Ptfn = Ptfn + Math.exp(-(pot_mol[isamp] - pot_min)/ xkT);
+                Ptfn = Ptfn + Math.exp(-(pot_mol[isamp] - POT_MIN)/ xkT);
             }
 
 
@@ -344,7 +340,7 @@ public class Cluster implements Cloneable{
 
             for(int isamp=0;isamp<3;isamp++) {
 
-                temp_pot = pot_mol[isamp] - pot_min;
+                temp_pot = pot_mol[isamp] - POT_MIN;
                 weight = Math.exp(-temp_pot / xkT) / Ptfn;
                 pot += weight * pot_mol[isamp];
                 dpotx += weight * dpotx_mol[isamp];

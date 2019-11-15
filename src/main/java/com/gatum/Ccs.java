@@ -27,11 +27,14 @@ import java.util.concurrent.*;
  * @version 1.0
  */
 
-@SpringBootApplication
+//@SpringBootApplication
 public class Ccs {
     public static void main(String[] args) throws InterruptedException, ExecutionException {
 
-        SpringApplication.run(Ccs.class, args);
+ //       SpringApplication.run(Ccs.class, args);
+        Util ccs=new Util();
+        ccs.Response("deprotonated_3D.sdf");
+
 
     }
 }
