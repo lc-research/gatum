@@ -50,7 +50,7 @@ public class Util{
         ion.configureCluster();
 
 
-        for (Iterator i$ = ion.originalMolecule.atoms().iterator(); i$.hasNext(); ) {
+        for (Iterator i$ = ion.getOriginalMolecule().atoms().iterator(); i$.hasNext(); ) {
 
             atom = (IAtom) i$.next();
 
@@ -65,7 +65,7 @@ public class Util{
         }
 
 
-        atom = ion.originalMolecule.getAtom(ihold);
+        atom = ion.getOriginalMolecule().getAtom(ihold);
         double phi;
 
         phi = Math.acos(atom.getPoint3d().z / (Math.sqrt(Math.pow(atom.getPoint3d().z, 2) + Math.pow(atom.getPoint3d().y, 2))))+(Constants.PI / 2.0);
@@ -76,7 +76,7 @@ public class Util{
         ion.rotate(phi, theta, gamma);
 
 
-        atom = ion.Molecule.getAtom(ihold);
+        atom = ion.getMolecule().getAtom(ihold);
         gamma = Math.acos(atom.getPoint3d().x / (Math.sqrt(Math.pow(atom.getPoint3d().x, 2) + Math.pow(atom.getPoint3d().y, 2))));
 
         if (atom.getPoint3d().y < 0)
@@ -219,7 +219,7 @@ public class Util{
 
         cs = (OMEGA / (double) Constants.ITN) * Constants.PI * Math.pow(Constants.RO, 2)*Math.pow(10,20);
 
-        return "The CCS value of the molecule " + ion.Molecule.getProperty("cdk:Title") + " is " + String.format("%1.3E",cs)+'\n';
+        return "The CCS value of the molecule " + ion.getMolecule().getProperty("cdk:Title") + " is " + String.format("%1.3E",cs)+'\n';
 
 
 

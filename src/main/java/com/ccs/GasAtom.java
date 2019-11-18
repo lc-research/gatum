@@ -211,7 +211,7 @@ public class GasAtom implements Cloneable{
 
         IAtom a;
 
-        for (Iterator i$ = Mol.Molecule.atoms().iterator(); i$.hasNext(); ) {
+        for (Iterator i$ = Mol.getMolecule().atoms().iterator(); i$.hasNext(); ) {
             a = (IAtom) i$.next();
             if (a.getPoint3d().y > ymax)
                 ymax = a.getPoint3d().y;

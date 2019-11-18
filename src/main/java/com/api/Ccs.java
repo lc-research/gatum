@@ -12,8 +12,6 @@
 
 package com.api;
 
-import com.ccs.Util;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import java.util.concurrent.ExecutionException;
@@ -34,9 +32,6 @@ public class Ccs {
     public static void main(String[] args) throws InterruptedException, ExecutionException {
 
         SpringApplication.run(Ccs.class, args);
- //       Util ccs=new Util();
-//        ccs.Response("deprotonated_3D.sdf");
-
 
     }
 }

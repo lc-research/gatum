@@ -36,11 +36,19 @@ import static com.ccs.Constants.*;
 public class Cluster implements Cloneable{
 
     private double[] rolj,eolj,rhs;
-    IAtomContainer Molecule;
-    IAtomContainer originalMolecule;
+    private IAtomContainer Molecule;
+    private IAtomContainer originalMolecule;
 
     private double pot,dpotx,dpoty,dpotz,dmax;
 
+    public IAtomContainer getMolecule()
+    {
+        return Molecule;
+    }
+    public IAtomContainer getOriginalMolecule()
+    {
+        return originalMolecule;
+    }
     public double getDmax() {
         return this.dmax = dmax;
     }
@@ -177,8 +185,8 @@ public class Cluster implements Cloneable{
             double Ptfn=0;
             double xkT=IBST_MAX*XK;
 
-            double dipolzz=(DIPOL_D/(2*4*PI*XEO))*Math.pow(XE,2);
-            double dipolxx=(DIPOL_D/(2*4*PI*XEO))*Math.pow(XE,2);
+            double dipolzz=(DIPOL_D/(8*PI*XEO))*Math.pow(XE,2);
+            double dipolxx=(DIPOL_D/(8*PI*XEO))*Math.pow(XE,2);
             double POT_MIN=1.0E8;
 
 
@@ -363,10 +371,7 @@ public class Cluster implements Cloneable{
     public void rotate(double phi, double theta, double gamma)
     {
         IAtom a=null;
-
         double rxy,rzy,nphi,otheta,ophi,ogamma;
-
-
         IAtomContainer M=null;
 
         try {
