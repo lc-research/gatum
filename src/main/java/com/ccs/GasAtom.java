@@ -14,10 +14,7 @@ package com.ccs;
 
 import org.openscience.cdk.interfaces.IAtom;
 import java.util.Iterator;
-
-import static com.ccs.Constants.HE_MASS;
-import static com.ccs.Constants.N2_MASS;
-
+import static com.ccs.Constants.*;
 /**
  * <h1>GasAtom!</h1>
  * This class defines the properties and functions of the buffer gas atom.
@@ -31,7 +28,7 @@ public class GasAtom implements Cloneable{
     private double[] w = new double[6];
     private double[] dw = new double[6];
     private double dt;
-    private int l;
+    private boolean initiator=true;
     private double[][] tmp_array=new double[6][6];
     private double scatAngle;
     private double Mass;
@@ -42,10 +39,7 @@ public class GasAtom implements Cloneable{
     }
     public GasAtom(char type)
     {
-        if(type=='N')
-            Mass=N2_MASS;
-        else Mass=HE_MASS;
-
+        Mass = (type=='N')? N2_MASS : HE_MASS;
         Constants.bufferGas=type;
     }
 
@@ -83,7 +77,7 @@ public class GasAtom implements Cloneable{
     public void diffeq(Cluster Mol)
     {
 
-        if(l==0) {
+        if(initiator) {
             this.rungeKutta(Mol);
         }
 
@@ -169,7 +163,7 @@ public class GasAtom implements Cloneable{
             tmp_array[j] = dw.clone();
         }
 
-        l = -1;
+        initiator = false;
         dt = 2.0 * dt;
 
 
@@ -177,33 +171,31 @@ public class GasAtom implements Cloneable{
     /**
      * This method is used to calculate the scattering angle of the buffer gas atom.
      * @param Mol This is the molecule involved in the binary collision
-     * @param v This is the initial velocity of the buffer gas atom.
-     * @param  b This is the impact parameter
      */
-    public void scatteringAngle(Cluster Mol,double v,double b) {
+    public void scatteringAngle(Cluster Mol,double velocity,double impactParameter) {
 
 
-        double vy = -v;
+        double vy = -velocity;
         double vx = 0;
         double vz = 0;
 
         // determine time step
 
-        double top = (v / 95.2381) - 0.5;
-        if (v > 1000)
+        double top = (velocity / 95.2381) - 0.5;
+        if (velocity > 1000)
             top = 10;
-        if (v > 2000)
-            top = 10.0 - ((v - 2000) * 7.5E-3);
-        if (v > 3000)
+        if (velocity > 2000)
+            top = 10.0 - ((velocity - 2000) * 7.5E-3);
+        if (velocity > 3000)
             top = 2.5;
 
-        double dt1 = top * Constants.DTSF1 * 1.0E-11 / v;
+        double dt1 = top * Constants.DTSF1 * 1.0E-11 / velocity;
         double dt2 = dt1 * Constants.DTSF2;
 
         // determine trajectory start position
 
-        double e0 = 0.5 * Constants.MU * Math.pow(v, 2);
-        double x = b;
+        double e0 = 0.5 * Constants.MU * Math.pow(velocity, 2);
+        double x = impactParameter;
         double z = 0;
 
         double ymin = 0;
@@ -281,7 +273,6 @@ public class GasAtom implements Cloneable{
 
         int noOfSteps = 0;
         int nw = 0;
-        bufferGas.l = 0;
         double redPot=0.0;
 
         do {
@@ -298,18 +289,18 @@ public class GasAtom implements Cloneable{
             redPot = Math.abs(Mol.getPot()) / e0;
             if ((redPot > Constants.SW2) && bufferGas.dt == dt1) {
                 bufferGas.dt = dt2;
-                bufferGas.l=0;
+                bufferGas.initiator=false;
             }
 
 
             if ((redPot < Constants.SW2) && bufferGas.dt == dt2) {
                 bufferGas.dt = dt1;
-                bufferGas.l=0;
+                bufferGas.initiator=false;
             }
         } while (((redPot > Constants.SW1)) || (nw < 50));
 
 
-        scatAngle = Math.acos((bufferGas.dw[2] * (-v)) / (v * Math.sqrt(Math.pow(bufferGas.dw[0], 2) + Math.pow(bufferGas.dw[2], 2) + Math.pow(bufferGas.dw[4], 2))));
+        scatAngle = Math.acos((bufferGas.dw[2] * (-velocity)) / (velocity * Math.sqrt(Math.pow(bufferGas.dw[0], 2) + Math.pow(bufferGas.dw[2], 2) + Math.pow(bufferGas.dw[4], 2))));
 
 
         if (!(bufferGas.dw[0] > 0)) {
