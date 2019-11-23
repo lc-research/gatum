@@ -12,14 +12,16 @@
 
 package com.ccs;
 
+import edu.cornell.lassp.houle.RngPack.Ranlux;
 import org.openscience.cdk.interfaces.IAtom;
 import org.openscience.cdk.interfaces.IAtomContainer;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.IntStream;
 import static com.ccs.Constants.*;
-
-
+import static org.math.array.DoubleArray.*;
+import static org.math.array.LinearAlgebra.*;
+import static org.math.array.StatisticSample.*;
 /**
  * <h1>Util!</h1>
  * This class provides utility functions to calculate CCS
@@ -30,6 +32,18 @@ import static com.ccs.Constants.*;
  */
 
 public class Util{
+    private final int INP=40; //Number of points in velocity integration.
+    private final int ITN=10; //Number of complete cycles for average mobility calculation.
+    private final int IMP=25; // Number of points in Monte Carlo integrations of impact parameter and orientation.
+    private final int IRN=1000;
+    private final int IBST_MAX=500;
+    private final int IMP_FAC=5;
+    private final double CMIN=0.0005;
+    private final double DBST=0.1;
+    private double OMEGA;
+    private final double RO=3.043*1.0E-10;
+
+
     public Util() {
 
     }
@@ -39,15 +53,15 @@ public class Util{
      * @param ion The calculations will be performed to calculate the CCS of this molecule.
      * @param bufferG This is the buffer gas atom of the CCS
      */
-    public String collisionCrossSection(Cluster ion,char bufferG)throws InterruptedException, ExecutionException {
+    public String collisionCrossSection(Cluster ion,char bufferG, int temperature)throws InterruptedException, ExecutionException {
         //determin maximum extent and orientation along x axis
-
+        double RMAX=0;
         IAtom atom = null;
         double r;
         int ihold = 0, i = 0;
 
         final GasAtom bufferGas = new GasAtom(bufferG);
-        ion.configureCluster();
+        ion.configureCluster(bufferGas.getType());
 
 
         for (Iterator i$ = ion.getOriginalMolecule().atoms().iterator(); i$.hasNext(); ) {
@@ -92,10 +106,10 @@ public class Util{
 
         double x;
 
-        for (int ir = 1; ir <= Constants.IRN; ir++) {
+        for (int ir = 1; ir <= IRN; ir++) {
             x = RMAX + ROMAX - (ir * ((RMAX + ROMAX) / IRN));
 
-            ion.potential(x, 0, 0);
+            ion.potential(x, 0, 0,bufferGas.getType());
 
             if (ion.getPot() == 0) {
                 break;
@@ -108,7 +122,7 @@ public class Util{
 
 
         // setup integration over gst
-        Map rGst = this.integrationOverGst();
+        Map rGst = this.integrationOverGst(temperature);
         final double[] pgst = (double[]) rGst.get("pgst");
         final double[] wgst = (double[]) rGst.get("wgst");
 
@@ -165,7 +179,7 @@ public class Util{
                         b2max[ig] = (double) (ibst - IMP_FAC) * DBST;
                         do {
                             b2max[ig] = b2max[ig] + DBST;
-                            impactParamter = Constants.RO * Math.sqrt(b2max[ig]);
+                            impactParamter = RO * Math.sqrt(b2max[ig]);
                             bufferGas.scatteringAngle(ionParallel[ig], velocity, impactParamter);
                             scatAngle = bufferGas.getScatAngle();
                         } while ((1 - Math.cos(scatAngle)) > CMIN);
@@ -183,18 +197,20 @@ public class Util{
 
 
         double cs;
-        Random.ranlux();
+
+        Ranlux Sequence = new Ranlux(3,5013486);
+
+        Sequence.raw();
 
         final double[] RandomN = new double[INP*ITN*IMP*4];
         for (int j = 0; j < INP*ITN*IMP*4; j++) {
-            RandomN[j] = Random.ranlux();
+            RandomN[j] = Sequence.raw();
         }
 
-        final double MU_HALF=MU/2;
-
+        OMEGA=0;
         IntStream.range(0,INP*ITN).parallel().forEach(j-> {
             double velocity,impactParameter;
-            int ig=j%Constants.INP;
+            int ig=j%INP;
             int pointer=j;
             if(j>0)
                 pointer=IMP*j*4;
@@ -205,7 +221,7 @@ public class Util{
             {
                 ionParallel[j].rantate(RandomN[pointer+1],RandomN[pointer+2],RandomN[pointer+3]);
 
-                impactParameter=Constants.RO*Math.sqrt(RandomN[pointer]*b2max[ig]);
+                impactParameter=RO*Math.sqrt(RandomN[pointer]*b2max[ig]);
                 bufferGasParallel[j].scatteringAngle(ionParallel[j],
                         velocity,impactParameter);
 
@@ -217,7 +233,7 @@ public class Util{
         });
 
 
-        cs = (OMEGA / (double) Constants.ITN) * Constants.PI * Math.pow(Constants.RO, 2)*Math.pow(10,20);
+        cs = (OMEGA / (double) ITN) * Constants.PI * Math.pow(RO, 2)*Math.pow(10,20);
 
         return "The CCS value of the molecule " + ion.getMolecule().getProperty("cdk:Title") + " is " + String.format("%1.3E",cs)+'\n';
 
@@ -228,20 +244,17 @@ public class Util{
     /**
      * This method is used to perform the integration over velocity
      */
-    public Map integrationOverGst()
+    public Map integrationOverGst(int temperature)
     {
         double eo=1.34E-03*Constants.XE;
-        double tst=Constants.XK*Constants.temperature/eo;
-
-
-
+        double tst=Constants.XK*temperature/eo;
         double tst3=Math.pow(tst,3);
 
         double dgst=5.0E-7*6*Math.sqrt(tst);
         double gst=dgst;
         double sum=0, sum1=0, sum2=0;
 
-        for(int i=0;i<=Constants.INP;i++) {
+        for(int i=0;i<=INP;i++) {
 
             sum1 = sum1 + Math.sqrt(i);
         }
@@ -250,7 +263,7 @@ public class Util{
         double[] wgst = new double[INP];
         double[] pgst = new double[INP];
 
-        for(int i=1;i<=Constants.INP;i++) {
+        for(int i=1;i<=INP;i++) {
             hold1 = Math.sqrt(i);
             hold2 = Math.sqrt(i-1);
             sum2 += hold2;
@@ -285,10 +298,8 @@ public class Util{
         for(int i=0;i<molecule.length;i++)
         {
             start = System.currentTimeMillis();
-
-            Random.rluxgo(3,5013486,0,0);
             Cluster ion = new Cluster(molecule[i]);
-            CCS=this.collisionCrossSection(ion,'H');
+            CCS=this.collisionCrossSection(ion,'H',298);
 
             end = System.currentTimeMillis();
             float sec = (end - start)/ 1000F;

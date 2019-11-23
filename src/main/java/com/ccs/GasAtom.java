@@ -25,6 +25,7 @@ import static com.ccs.Constants.*;
  */
 
 public class GasAtom implements Cloneable{
+    private char type='H';
     private double[] w = new double[6];
     private double[] dw = new double[6];
     private double dt;
@@ -32,6 +33,13 @@ public class GasAtom implements Cloneable{
     private double[][] tmp_array=new double[6][6];
     private double scatAngle;
     private double Mass;
+    private final double SW1=0.00005;
+    private final double SW2=0.005;
+    private double N2_MASS=28.0134;
+    private double HE_MASS=4.0026;
+    private final int MAX_STEPS=30000;
+    private final double DTSF1=0.5;
+    private final double  DTSF2=0.1;
 
     public GasAtom(double[] w)
     {
@@ -40,7 +48,12 @@ public class GasAtom implements Cloneable{
     public GasAtom(char type)
     {
         Mass = (type=='N')? N2_MASS : HE_MASS;
-        Constants.bufferGas=type;
+        type=type;
+    }
+
+    public char getType()
+    {
+        return type;
     }
 
     public double getScatAngle(){
@@ -62,7 +75,7 @@ public class GasAtom implements Cloneable{
         dw[2]=w[3]/Constants.MU;
         dw[4]=w[5]/Constants.MU;
 
-        Mol.potential(w[0],w[2],w[4]);
+        Mol.potential(w[0],w[2],w[4],type);
 
         dw[1]=- Mol.getDpotx();
         dw[3]=- Mol.getDpoty();
@@ -189,8 +202,8 @@ public class GasAtom implements Cloneable{
         if (velocity > 3000)
             top = 2.5;
 
-        double dt1 = top * Constants.DTSF1 * 1.0E-11 / velocity;
-        double dt2 = dt1 * Constants.DTSF2;
+        double dt1 = top * DTSF1 * 1.0E-11 / velocity;
+        double dt2 = dt1 * DTSF2;
 
         // determine trajectory start position
 
@@ -220,37 +233,37 @@ public class GasAtom implements Cloneable{
         double y = (double) id2 * 1.0E-10;
 
 
-        Mol.potential(x,y,z);
+        Mol.potential(x,y,z,type);
 
 
 
-        if (Math.abs((Mol.getPot()) / e0) < Constants.SW1) {
+        if (Math.abs((Mol.getPot()) / e0) < SW1) {
 
             do {
                 id2 = id2 - 1;
                 y = (double) id2 * 1.0E-10;
-                Mol.potential(x,y,z);
+                Mol.potential(x,y,z,type);
                 if (id2 < iymin) {
                     return;
                 }
 
                 y = (double) id2 * 1.0E-10;
-                Mol.potential(x,y,z);
+                Mol.potential(x,y,z,type);
 
-            } while ((Math.abs(Mol.getPot() / e0)) < Constants.SW1);
+            } while ((Math.abs(Mol.getPot() / e0)) < SW1);
         } else {
             do {
                 id2 = id2 + 10;
                 y = (double) id2 * 1.0E-10;
-                Mol.potential(x,y,z);
+                Mol.potential(x,y,z,type);
 
-            } while (Math.abs(Mol.getPot() / e0) > Constants.SW1);
+            } while (Math.abs(Mol.getPot() / e0) > SW1);
 
             do {
                 id2 = id2 - 1;
                 y = (double) id2 * 1.0E-10;
-                Mol.potential(x,y,z);
-            } while (Math.abs(Mol.getPot() / e0) < Constants.SW1);
+                Mol.potential(x,y,z,type);
+            } while (Math.abs(Mol.getPot() / e0) < SW1);
 
         }
 
@@ -280,24 +293,24 @@ public class GasAtom implements Cloneable{
                 bufferGas.diffeq(Mol);
 
                 nw++;
-                if ((noOfSteps + nw) > Constants.MAX_STEPS)// check if trajectory lost: too many steps is an indication of a lost trajectory
+                if ((noOfSteps + nw) > MAX_STEPS)// check if trajectory lost: too many steps is an indication of a lost trajectory
                 {
                     return;
                 }
             } while (Mol.getDmax()<Constants.ROMAX);
 
             redPot = Math.abs(Mol.getPot()) / e0;
-            if ((redPot > Constants.SW2) && bufferGas.dt == dt1) {
+            if ((redPot > SW2) && bufferGas.dt == dt1) {
                 bufferGas.dt = dt2;
                 bufferGas.initiator=false;
             }
 
 
-            if ((redPot < Constants.SW2) && bufferGas.dt == dt2) {
+            if ((redPot < SW2) && bufferGas.dt == dt2) {
                 bufferGas.dt = dt1;
                 bufferGas.initiator=false;
             }
-        } while (((redPot > Constants.SW1)) || (nw < 50));
+        } while (((redPot > SW1)) || (nw < 50));
 
 
         scatAngle = Math.acos((bufferGas.dw[2] * (-velocity)) / (velocity * Math.sqrt(Math.pow(bufferGas.dw[0], 2) + Math.pow(bufferGas.dw[2], 2) + Math.pow(bufferGas.dw[4], 2))));

@@ -38,8 +38,21 @@ public class Cluster implements Cloneable{
     private double[] rolj,eolj,rhs;
     private IAtomContainer Molecule;
     private IAtomContainer originalMolecule;
-
     private double pot,dpotx,dpoty,dpotz,dmax;
+
+    private double NTHETA=3.6297469670513871E-308;
+    private double NPHI=6.9533558064128858E-310;
+    private double NGAMMA=6.9533558064128858E-310;
+    private final double BOND=1.0976E-10;
+    private double EOGAS=0.06900;
+    private double DIPOL=(0.204956E-30/(2*4*PI*XEO))*XE*XE;
+    private final int IBST_MAX=500;
+    private final double ROGAS =3.6600;
+    private final double CONVE=4.2*0.01036427;
+    private final double CONVR=0.890898718;
+    private final double PC=-0.4825;
+    private final double PC_CENTER=-(PC);
+    private final double DIPOL_D=1.710E-30;
 
     public IAtomContainer getMolecule()
     {
@@ -93,7 +106,7 @@ public class Cluster implements Cloneable{
      * @param y position of the gas atom ralative to the y axis
      * @param  z position of the gas atom ralative to the z axis
      */
-    public void potential(double x, double y, double z)
+    public void potential(double x, double y, double z, char bufferGas)
     {
 
         double rx=0, ry=0, rz=0, e00=0, de00x=0, de00y=0, de00z=0;
@@ -110,7 +123,7 @@ public class Cluster implements Cloneable{
 
         IAtom a=null;
 
-        if(Constants.bufferGas=='H') {
+        if(bufferGas=='H') {
             for (Iterator i$ = Molecule.atoms().iterator(); i$.hasNext(); ) {
 
 
@@ -162,10 +175,10 @@ public class Cluster implements Cloneable{
                 i++;
             }
 
-            pot = e00 - (Constants.DIPOL * ((rx * rx) + (ry * ry) + (rz * rz)));
-            dpotx = de00x - (Constants.DIPOL * ((2 * rx * sum1) + (2 * ry * sum2) + (2 * rz * sum3)));
-            dpoty = de00y - (Constants.DIPOL * ((2 * rx * sum2) + (2 * ry * sum4) + (2 * rz * sum5)));
-            dpotz = de00z - (Constants.DIPOL * ((2 * rx * sum3) + (2 * ry * sum5) + (2 * rz * sum6)));
+            pot = e00 - (DIPOL * ((rx * rx) + (ry * ry) + (rz * rz)));
+            dpotx = de00x - (DIPOL * ((2 * rx * sum1) + (2 * ry * sum2) + (2 * rz * sum3)));
+            dpoty = de00y - (DIPOL * ((2 * rx * sum2) + (2 * ry * sum4) + (2 * rz * sum5)));
+            dpotz = de00z - (DIPOL * ((2 * rx * sum3) + (2 * ry * sum5) + (2 * rz * sum6)));
 
             return;
 
@@ -387,18 +400,18 @@ public class Cluster implements Cloneable{
             rxy=Math.sqrt(Math.pow(a.getPoint3d().x,2)+Math.pow(a.getPoint3d().y,2));
             if(rxy==0)
             {
-                a.getPoint3d().x=Math.cos(Constants.NTHETA)*rxy;
-                a.getPoint3d().y=Math.sin(Constants.NTHETA)*rxy;
+                a.getPoint3d().x=Math.cos(NTHETA)*rxy;
+                a.getPoint3d().y=Math.sin(NTHETA)*rxy;
 
             }
             else{
                 otheta=Math.acos(a.getPoint3d().x/rxy);
                 if(a.getPoint3d().y < 0)
                     otheta=(2*Constants.PI)-otheta;
-                Constants.NTHETA=otheta+theta;
+                NTHETA=otheta+theta;
 
-                a.getPoint3d().x=Math.cos(Constants.NTHETA)*rxy;
-                a.getPoint3d().y=Math.sin(Constants.NTHETA)*rxy;
+                a.getPoint3d().x=Math.cos(NTHETA)*rxy;
+                a.getPoint3d().y=Math.sin(NTHETA)*rxy;
             }
         }
         for(Iterator j$ = M.atoms().iterator(); j$.hasNext();) {
@@ -465,7 +478,7 @@ public class Cluster implements Cloneable{
     /**
      * This method is used to assign basic parameters to the cluster
      */
-    public void configureCluster()
+    public void configureCluster(char bufferGas)
     {
 
         int i=0;double weight=0;
@@ -486,7 +499,7 @@ public class Cluster implements Cloneable{
         for (IAtom atom : Molecule.atoms()) {
             weight+=atom.getExactMass();
 
-            if(Constants.bufferGas=='N')
+            if(bufferGas=='N')
             {
                 eolj[i] = this.setLjParametersN2("EO", atom.getSymbol());
                 rolj[i] = this.setLjParametersN2("RO", atom.getSymbol());
@@ -529,7 +542,7 @@ public class Cluster implements Cloneable{
         Arrays.sort(roljMax);
         ROMAX =roljMax[roljMax.length-1];
 
-        if(Constants.bufferGas=='N')
+        if(bufferGas=='N')
         {
             ROMAX=ROMAX+(1.1055E-10/2.0);
         }
@@ -619,7 +632,7 @@ public class Cluster implements Cloneable{
      * @param AtomType This is the Type of the atom
      * @return double LJ Parameter value
      */
-    public static double setLjParametersN2(String Parameter, String AtomType)
+    public double setLjParametersN2(String Parameter, String AtomType)
     {
         double ParameterVaule=0;
 
@@ -628,34 +641,34 @@ public class Cluster implements Cloneable{
             switch(AtomType)
             {
                 case "O" :
-                    ParameterVaule=Math.sqrt(Constants.EOGAS*0.0558)*Constants.CONVE*Constants.XE;
+                    ParameterVaule=Math.sqrt(EOGAS*0.0558)*CONVE*Constants.XE;
                     break;
                 case "N" :
-                    ParameterVaule=Math.sqrt(Constants.EOGAS*0.0828)*Constants.CONVE*Constants.XE;
+                    ParameterVaule=Math.sqrt(EOGAS*0.0828)*CONVE*Constants.XE;
                     break;
                 case "C" :
-                    ParameterVaule=Math.sqrt(Constants.EOGAS*0.0977)*Constants.CONVE*Constants.XE;
+                    ParameterVaule=Math.sqrt(EOGAS*0.0977)*CONVE*Constants.XE;
                     break;
                 case "H" :
-                    ParameterVaule=Math.sqrt(Constants.EOGAS*0.0189)*Constants.CONVE*Constants.XE;
+                    ParameterVaule=Math.sqrt(EOGAS*0.0189)*CONVE*Constants.XE;
                     break;
                 case "Na":
-                    ParameterVaule=Math.sqrt(Constants.EOGAS*0.03000)*Constants.CONVE*Constants.XE;
+                    ParameterVaule=Math.sqrt(EOGAS*0.03000)*CONVE*Constants.XE;
                     break;
                 case "Si":
-                    ParameterVaule=Math.sqrt(Constants.EOGAS*0.4020)*Constants.CONVE*Constants.XE;
+                    ParameterVaule=Math.sqrt(EOGAS*0.4020)*CONVE*Constants.XE;
                     break;
                 case "S":
-                    ParameterVaule=Math.sqrt(Constants.EOGAS*0.2740)*Constants.CONVE*Constants.XE;
+                    ParameterVaule=Math.sqrt(EOGAS*0.2740)*CONVE*Constants.XE;
                     break;
                 case "Fe":
-                    ParameterVaule=Math.sqrt(Constants.EOGAS*0.0130)*Constants.CONVE*Constants.XE;
+                    ParameterVaule=Math.sqrt(EOGAS*0.0130)*CONVE*Constants.XE;
                     break;
                 case "P":
-                    ParameterVaule=Math.sqrt(Constants.EOGAS*0.305)*Constants.CONVE*Constants.XE;
+                    ParameterVaule=Math.sqrt(EOGAS*0.305)*CONVE*Constants.XE;
                     break;
                 case "F":
-                    ParameterVaule=Math.sqrt(Constants.EOGAS*0.0465)*Constants.CONVE*Constants.XE;
+                    ParameterVaule=Math.sqrt(EOGAS*0.0465)*CONVE*Constants.XE;
                     break;
 
 
@@ -668,34 +681,34 @@ public class Cluster implements Cloneable{
             switch(AtomType)
             {
                 case "O" :
-                    ParameterVaule=Math.sqrt(Constants.ROGAS*3.2550)*Constants.CONVR*1.0E-10;
+                    ParameterVaule=Math.sqrt(ROGAS*3.2550)*CONVR*1.0E-10;
                     break;
                 case "N" :
-                    ParameterVaule=Math.sqrt(Constants.ROGAS*4.3920)*Constants.CONVR*1.0E-10;
+                    ParameterVaule=Math.sqrt(ROGAS*4.3920)*CONVR*1.0E-10;
                     break;
                 case "C" :
-                    ParameterVaule=Math.sqrt(Constants.ROGAS*3.5814)*Constants.CONVR*1.0E-10;
+                    ParameterVaule=Math.sqrt(ROGAS*3.5814)*CONVR*1.0E-10;
                     break;
                 case "H" :
-                    ParameterVaule=Math.sqrt(Constants.ROGAS*1.2409)*Constants.CONVR*1.0E-10;
+                    ParameterVaule=Math.sqrt(ROGAS*1.2409)*CONVR*1.0E-10;
                     break;
                 case "Na":
-                    ParameterVaule=Math.sqrt(Constants.ROGAS*2.9830)*Constants.CONVR*1.0E-10;
+                    ParameterVaule=Math.sqrt(ROGAS*2.9830)*CONVR*1.0E-10;
                     break;
                 case "Si":
-                    ParameterVaule=Math.sqrt(Constants.ROGAS*4.2950)*Constants.CONVR*1.0E-10;
+                    ParameterVaule=Math.sqrt(ROGAS*4.2950)*CONVR*1.0E-10;
                     break;
                 case "S":
-                    ParameterVaule=Math.sqrt(Constants.ROGAS*4.0350)*Constants.CONVR*1.0E-10;
+                    ParameterVaule=Math.sqrt(ROGAS*4.0350)*CONVR*1.0E-10;
                     break;
                 case "Fe":
-                    ParameterVaule=Math.sqrt(Constants.ROGAS*2.9120)*Constants.CONVR*1.0E-10;
+                    ParameterVaule=Math.sqrt(ROGAS*2.9120)*CONVR*1.0E-10;
                     break;
                 case "P":
-                    ParameterVaule=Math.sqrt(Constants.ROGAS*4.1470)*Constants.CONVR*1.0E-10;
+                    ParameterVaule=Math.sqrt(ROGAS*4.1470)*CONVR*1.0E-10;
                     break;
                 case "F":
-                    ParameterVaule=Math.sqrt(Constants.ROGAS*3.1285)*Constants.CONVR*1.0E-10;
+                    ParameterVaule=Math.sqrt(ROGAS*3.1285)*CONVR*1.0E-10;
                     break;
             }
         }
