@@ -22,7 +22,6 @@ package com.ccs;
 public final class Constants {
     private Constants(){}
 
-  //  public static final int temperature=298;
     public static double PI=3.1415926535897931;
     public static double XEO=8.854187817E-12;
     public static double XE=1.60217733E-19;
